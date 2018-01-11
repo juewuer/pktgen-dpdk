@@ -330,7 +330,7 @@ pktgen_init_default_rnd(void)
 	}
 
 	/* Use contents of /dev/urandom as seed for ISAAC */
-	if (fread(xor_state, sizeof(xor_state[0]), 1, dev_random) != 2) {
+	if (fread(xor_state, sizeof(xor_state[0]), 1, dev_random) != sizeof(xor_state[0])) {
 		pktgen_log_error(
 			"Could not read enough random data for PRNG seed");
 		return;
