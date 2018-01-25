@@ -1510,6 +1510,41 @@ range_set_proto(port_info_t *info, const char *type)
 
 /**************************************************************************//**
  *
+ * range_set_proto - Set up the protocol type for a port/packet.
+ *
+ * DESCRIPTION
+ * Setup all range packets with a protocol types with the port list.
+ *
+ * RETURNS: N/A
+ *
+ * SEE ALSO:
+ */
+
+void
+range_set_tcp_flag(port_info_t *info, const char *type)
+{
+    uint16_t flag = info->range.tcp_flag; 
+	switch (type[0])
+    {
+        case 's':
+            flag |= (0x1<<0);
+            break;
+        case 'a':
+            flag |= (0x1<<1);
+            break;
+        case 'r':
+            flag |= (0x1<<2);
+            break;
+        default:
+            flag=0;
+            break;       
+    }
+	info->range.tcp_flag = flag;
+}
+
+
+/**************************************************************************//**
+ *
  * pcap_enable_disable - Enable or disable PCAP sending of packets.
  *
  * DESCRIPTION

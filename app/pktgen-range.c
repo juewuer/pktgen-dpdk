@@ -29,6 +29,35 @@ pktgen_range_ctor(range_info_t *range, pkt_seq_t *pkt)
 		switch (pkt->ipProto) {
 		case PG_IPPROTO_TCP:
 		case PG_IPPROTO_UDP:
+		case PG_IPPROTO_ICMP:
+
+			if (unlikely(range->src_ip_inc != 0)) {
+				uint32_t p = pkt->ip_src_addr.addr.ipv4.s_addr;
+				p += range->src_ip_inc;
+				if (p < range->src_ip_min)
+					p = range->src_ip_max;
+				else if (p > range->src_ip_max)
+					p = range->src_ip_min;
+				pkt->ip_src_addr.addr.ipv4.s_addr = p;
+			} else
+				pkt->ip_src_addr.addr.ipv4.s_addr =
+					range->src_ip;
+
+			if (unlikely(range->dst_ip_inc != 0)) {
+				uint32_t p = pkt->ip_dst_addr.addr.ipv4.s_addr;
+				p += range->dst_ip_inc;
+				if (p < range->dst_ip_min)
+					p = range->dst_ip_max;
+				else if (p > range->dst_ip_max)
+					p = range->dst_ip_min;
+				pkt->ip_dst_addr.addr.ipv4.s_addr = p;
+			} else
+				pkt->ip_dst_addr.addr.ipv4.s_addr =
+					range->dst_ip;
+
+            if(pkt->ipProto==PG_IPPROTO_ICMP)
+                break;
+
 
 			if (pkt->dport == PG_IPPROTO_L4_GTPU_PORT) {
 				if (unlikely(range->gtpu_teid_inc != 0) ) {
@@ -64,30 +93,6 @@ pktgen_range_ctor(range_info_t *range, pkt_seq_t *pkt)
 				pkt->dport = dport;
 			} else
 				pkt->dport = range->dst_port;
-
-			if (unlikely(range->src_ip_inc != 0)) {
-				uint32_t p = pkt->ip_src_addr.addr.ipv4.s_addr;
-				p += range->src_ip_inc;
-				if (p < range->src_ip_min)
-					p = range->src_ip_max;
-				else if (p > range->src_ip_max)
-					p = range->src_ip_min;
-				pkt->ip_src_addr.addr.ipv4.s_addr = p;
-			} else
-				pkt->ip_src_addr.addr.ipv4.s_addr =
-					range->src_ip;
-
-			if (unlikely(range->dst_ip_inc != 0)) {
-				uint32_t p = pkt->ip_dst_addr.addr.ipv4.s_addr;
-				p += range->dst_ip_inc;
-				if (p < range->dst_ip_min)
-					p = range->dst_ip_max;
-				else if (p > range->dst_ip_max)
-					p = range->dst_ip_min;
-				pkt->ip_dst_addr.addr.ipv4.s_addr = p;
-			} else
-				pkt->ip_dst_addr.addr.ipv4.s_addr =
-					range->dst_ip;
 
 			if (unlikely(range->vlan_id_inc != 0)) {
 				/* Since VLAN is set ot MIN_VLAN_ID, check this and skip first increment

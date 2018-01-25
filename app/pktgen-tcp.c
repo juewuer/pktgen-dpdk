@@ -10,6 +10,28 @@
 
 #include "pktgen-tcp.h"
 
+#include "xorshift64star.h"	/* PRNG function */
+
+
+uint64_t xor_seed[2];
+static inline uint64_t xor_next(void)
+{
+	uint64_t s1 = xor_seed[0];
+	const uint64_t s0 = xor_seed[1];
+	xor_seed[0]=s0;
+  	s1 ^= s1 << 23;                 /* a */ 
+     	return ( xor_seed[ 1 ] = ( s1 ^ s0 ^ ( s1 >> 17 ) ^ ( s0 >> 26 ) ) ) +  s0;               /* b, c */ 
+}
+
+ static inline uint32_t  pktgen_default_rnd_func(void) 
+ { 
+ //    return xor_next(); 
+     return (uint32_t)xorshift64star();
+ }
+
+
+
+
 /**************************************************************************//**
  *
  * pktgen_tcp_hdr_ctor - TCP header constructor routine.
@@ -26,7 +48,7 @@ void *
 pktgen_tcp_hdr_ctor(pkt_seq_t *pkt, void * hdr, int type)
 {
 	uint16_t tlen;
-
+	static long seq =1;
 	if (type == ETHER_TYPE_IPv4) {
 		tcpip_t *tip = (tcpip_t *)hdr;
 
@@ -47,10 +69,16 @@ pktgen_tcp_hdr_ctor(pkt_seq_t *pkt, void * hdr, int type)
 		tip->tcp.seq        = htonl(DEFAULT_PKT_NUMBER);
 		tip->tcp.ack        = htonl(DEFAULT_ACK_NUMBER);
 		tip->tcp.offset     = ((sizeof(tcpHdr_t) / sizeof(uint32_t)) << 4);	/* Offset in words */
+		//tip->tcp.flags      = SYN_FLAG;						/* SYN */
 		tip->tcp.flags      = ACK_FLAG;						/* ACK */
 		tip->tcp.window     = htons(DEFAULT_WND_SIZE);
 		tip->tcp.urgent     = 0;
-
+		/*
+		tip->tcp.opts[0]     = 0x2;
+		tip->tcp.opts[1]     = 0x4;
+		tip->tcp.opts[2]     = 0x05;
+		tip->tcp.opts[3]     = 0xb4;
+*/
 		tlen                = pkt->pktSize - pkt->ether_hdr_size;
 
 		tip->tcp.cksum      = cksum(tip, tlen, 0);

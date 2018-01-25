@@ -103,7 +103,8 @@ static struct cli_map range_map[] = {
 	{ 31, "range %P src ip "SMMI" %4" },
 	{ 32, "range %P dst ip %4 %4 %4 %4" },
 	{ 33, "range %P src ip %4 %4 %4 %4" },
-	{ 40, "range %P proto %|tcp|udp" },
+	{ 40, "range %P proto %|tcp|udp|icmp" },
+	{ 41, "range %P flag %|clr|syn|ack|rst" },
 	{ 50, "range %P dst port "SMMI" %d" },
 	{ 51, "range %P src port "SMMI" %d" },
 	{ 52, "range %P dst port %d %d %d %d" },
@@ -241,6 +242,10 @@ range_cmd(int argc, char **argv)
 		case 40:
 			foreach_port(portlist,
 				range_set_proto(info, argv[3]) );
+			break;
+		case 41:
+			foreach_port(portlist,
+				range_set_tcp_flag(info, argv[3]) );
 			break;
 		case 50:
 			foreach_port(portlist,

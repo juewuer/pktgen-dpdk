@@ -22,16 +22,69 @@
  * SEE ALSO:
  */
 
+struct dnshdr {
+	unsigned short int id;
+
+	unsigned char rd:1;			/* recursion desired */
+	unsigned char tc:1;			/* truncated message */
+	unsigned char aa:1;			/* authoritive answer */
+	unsigned char opcode:4;		/* purpose of message */
+	unsigned char qr:1;			/* response flag */
+
+	unsigned char rcode:4;		/* response code */
+	unsigned char unused:2;		/* unused bits */
+	unsigned char pr:1;			/* primary server required (non standard) */
+	unsigned char ra:1;			/* recursion available */
+
+	unsigned short int que_num;
+	unsigned short int rep_num;
+	unsigned short int num_rr;
+	unsigned short int num_rrsup;
+};
+
+struct dnsdata{
+	char query[32];
+	unsigned short int type;
+	unsigned short int class;
+};
+
+uint64_t xor_seed[2];
+static inline uint64_t
+xor_next(void){
+	uint64_t s1 = xor_seed[0];
+	const uint64_t s0 = xor_seed[1];
+	xor_seed[0]=s0;
+  	s1 ^= s1 << 23;                 /* a */ 
+     	return ( xor_seed[ 1 ] = ( s1 ^ s0 ^ ( s1 >> 17 ) ^ ( s0 >> 26 ) ) ) +  s0;               /* b, c */ 
+}
+
+static __inline__ uint16_t 
+pktgen_default_rnd_func(void) 
+{ 
+    return xor_next(); 
+} 
+
+static char str[37] = "0123456789abcdefghijklmnopqrstuvwxyz";
+static char hostname[32] = {9,'x','x','x','x','x','x','x','x','x',2,'k','6',4,'g','s','l','b',8,'k','s','y','u','n','c','d','n',3,'c','o','m',0};
+
+#define UDP_PORT_DNS 53
+
 void *
 pktgen_udp_hdr_ctor(pkt_seq_t *pkt, void *hdr, int type)
 {
 	uint16_t tlen;
+	int i;
 
 	if (type == ETHER_TYPE_IPv4) {
 		udpip_t *uip = (udpip_t *)hdr;
 
 		/* Zero out the header space */
 		memset((char *)uip, 0, sizeof(udpip_t));
+		
+		if(pkt->dport == UDP_PORT_DNS)
+		{
+			pkt->pktSize= pkt->ether_hdr_size +sizeof(ipHdr_t)+sizeof(udpip_t)+sizeof(struct dnshdr)+sizeof(struct dnsdata);
+		}		
 
 		/* Create the UDP header */
 		uip->ip.src         = htonl(pkt->ip_src_addr.addr.ipv4.s_addr);
@@ -45,6 +98,31 @@ pktgen_udp_hdr_ctor(pkt_seq_t *pkt, void *hdr, int type)
 		uip->udp.len        = htons(tlen);
 		uip->udp.sport      = htons(pkt->sport);
 		uip->udp.dport      = htons(pkt->dport);
+
+		if(pkt->dport == UDP_PORT_DNS)
+		{
+			struct dnshdr *dnsh = (struct dnshdr*)((char*)uip+sizeof(udpip_t));
+			memset((char*)dnsh,0,sizeof(struct dnshdr));
+			dnsh->id = htons(pktgen_default_rnd_func());
+			dnsh->rd = 1;
+			dnsh->que_num= htons(1);
+	
+			struct dnsdata *dnsd = (struct dnsdata*)((char*)dnsh+sizeof(struct dnshdr));
+	
+			dnsd->query[0]=9;
+			for(i = 1;i <10;i++)
+			{
+				dnsd->query[i]=str[pktgen_default_rnd_func()%36];
+			}
+			for(i = 10;i<32;i++)
+			{
+				dnsd->query[i] = hostname[i];
+			}
+			
+			dnsd->type = htons(1);
+			dnsd->class= htons(1);
+	
+		}	
 
 		/* Includes the pseudo header information */
 		tlen                = pkt->pktSize - pkt->ether_hdr_size;

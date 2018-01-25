@@ -274,7 +274,7 @@ typedef struct tcpHdr_s {
 	uint16_t window;/* Window value */
 	uint16_t cksum;	/* Checksum */
 	uint16_t urgent;/* Urgent pointer or offset */
-	uint8_t opts[0];/* Place holder for options */
+	uint8_t opts[4];/* Place holder for options */
 } __attribute__((__packed__)) tcpHdr_t;
 
 enum { URG_FLAG = 0x20, ACK_FLAG = 0x10, PSH_FLAG = 0x08, RST_FLAG = 0x04,

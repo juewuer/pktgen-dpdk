@@ -134,6 +134,7 @@ void range_set_dst_ip(port_info_t *info,
 void range_set_src_port(port_info_t *info, char *what, uint16_t port);
 void range_set_dst_port(port_info_t *info, char *what, uint16_t port);
 void range_set_proto(port_info_t *info, const char *type);
+void range_set_tcp_flag(port_info_t *info, const char *type);
 void range_set_pkt_type(port_info_t *info, const char *type);
 void range_set_pkt_size(port_info_t *info,
 				      char *what,

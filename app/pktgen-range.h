@@ -37,6 +37,7 @@ typedef struct range_info_s {
 	uint32_t dst_ip_max;	/**< Destination maximum IP address */
 
 	uint16_t ip_proto;	/**< IP Protocol type TCP or UDP */
+	uint16_t tcp_flag;	/**< TCP flag */
 
 	uint16_t src_port;	/**< Source port starting */
 	uint16_t src_port_min;	/**< Source port minimum */

@@ -1491,6 +1491,41 @@ range_ip_proto(lua_State *L)
 	return 0;
 }
 
+
+
+/**************************************************************************//**
+ *
+ * range_src_port - Set the source port value in the range data.
+ *
+ * DESCRIPTION
+ * Set the source port value in the range data.
+ *
+ * RETURNS: N/A
+ *
+ * SEE ALSO:
+ */
+
+static int
+range_tcp_flag(lua_State *L)
+{
+	portlist_t portlist;
+	const char *ip;
+
+	switch (lua_gettop(L) ) {
+	default: return luaL_error(L, "tcp_flag, wrong number of arguments");
+	case 2:
+		break;
+	}
+	rte_parse_portlist(luaL_checkstring(L, 1), &portlist);
+
+	ip = luaL_checkstring(L, 2);
+	foreach_port(portlist,
+		     range_set_tcp_flag(info, ip));
+
+	pktgen_update_display();
+	return 0;
+}
+
 /**************************************************************************//**
  *
  * range_src_port - Set the source port value in the range data.
@@ -3380,6 +3415,7 @@ static const luaL_Reg pktgenlib_range[] = {
 	{"src_ip",        range_src_ip},		/* Set the source IP address and netmask value */
 	{"dst_ip",        range_dst_ip},		/* Set the destination IP address */
 	{"ip_proto",      range_ip_proto},		/* Set the IP Protocol type */
+	{"tcp_flag",      range_tcp_flag},		/* Set the TCP flag */
 	{"src_port",      range_src_port},		/* Set the IP source port number */
 	{"dst_port",      range_dst_port},		/* Set the IP destination port number */
 	{"vlan_id",       range_vlan_id},		/* Set the vlan id value */
@@ -3451,6 +3487,7 @@ static const luaL_Reg pktgenlib[] = {
 	{"src_ip",        range_src_ip},		/* Set the source IP address and netmask value */
 	{"dst_ip",        range_dst_ip},		/* Set the destination IP address */
 	{"ip_proto",      range_ip_proto},		/* Set the IP Protocol type */
+	{"tcp_flag",      range_tcp_flag},		/* Set the TCP flag */
 	{"src_port",      range_src_port},		/* Set the IP source port number */
 	{"dst_port",      range_dst_port},		/* Set the IP destination port number */
 	{"vlan_id",       range_vlan_id},		/* Set the vlan id value */
