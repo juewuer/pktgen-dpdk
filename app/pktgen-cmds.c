@@ -236,29 +236,29 @@ pktgen_script_save(char *path)
 			(flags & SEND_VLAN_ID) ? "en" : "dis", i);
 
 		fprintf(fd, "#\n# Range packet information:\n");
-		fprintf(fd, "range %d mac src start %s\n", i,
+		fprintf(fd, "range %d src mac start %s\n", i,
 			inet_mtoa(buff, sizeof(buff),
 				  inet_h64tom(range->src_mac, &eaddr)));
-		fprintf(fd, "range %d mac src min %s\n", i,
+		fprintf(fd, "range %d src mac min %s\n", i,
 			inet_mtoa(buff, sizeof(buff),
 				  inet_h64tom(range->src_mac_min, &eaddr)));
-		fprintf(fd, "range %d mac src max %s\n", i,
+		fprintf(fd, "range %d src mac max %s\n", i,
 			inet_mtoa(buff, sizeof(buff),
 				  inet_h64tom(range->src_mac_max, &eaddr)));
-		fprintf(fd, "range %d mac src inc %s\n", i,
+		fprintf(fd, "range %d src mac inc %s\n", i,
 			inet_mtoa(buff, sizeof(buff),
 				  inet_h64tom(range->src_mac_inc, &eaddr)));
 
-		fprintf(fd, "range %d mac dst start %s\n", i,
+		fprintf(fd, "range %d dst mac start %s\n", i,
 			inet_mtoa(buff, sizeof(buff),
 				  inet_h64tom(range->dst_mac, &eaddr)));
-		fprintf(fd, "range %d mac dst min %s\n", i,
+		fprintf(fd, "range %d dst mac min %s\n", i,
 			inet_mtoa(buff, sizeof(buff),
 				  inet_h64tom(range->dst_mac_min, &eaddr)));
-		fprintf(fd, "range %d mac dst max %s\n", i,
+		fprintf(fd, "range %d dst mac max %s\n", i,
 			inet_mtoa(buff, sizeof(buff),
 				  inet_h64tom(range->dst_mac_max, &eaddr)));
-		fprintf(fd, "range %d mac dst inc %s\n", i,
+		fprintf(fd, "range %d dst mac inc %s\n", i,
 			inet_mtoa(buff, sizeof(buff),
 				  inet_h64tom(range->dst_mac_inc, &eaddr)));
 
@@ -296,16 +296,16 @@ pktgen_script_save(char *path)
 			(range->ip_proto == PG_IPPROTO_ICMP) ? "icmp" : "tcp");
 
 		fprintf(fd, "\n");
-		fprintf(fd, "range %d sport start %d\n", i, range->src_port);
-		fprintf(fd, "range %d sport min %d\n", i, range->src_port_min);
-		fprintf(fd, "range %d sport max %d\n", i, range->src_port_max);
-		fprintf(fd, "range %d sport inc %d\n", i, range->src_port_inc);
+		fprintf(fd, "range %d src port start %d\n", i, range->src_port);
+		fprintf(fd, "range %d src port min %d\n", i, range->src_port_min);
+		fprintf(fd, "range %d src port max %d\n", i, range->src_port_max);
+		fprintf(fd, "range %d src port inc %d\n", i, range->src_port_inc);
 
 		fprintf(fd, "\n");
-		fprintf(fd, "range %d dport start %d\n", i, range->dst_port);
-		fprintf(fd, "range %d dport min %d\n", i, range->dst_port_min);
-		fprintf(fd, "range %d dport max %d\n", i, range->dst_port_max);
-		fprintf(fd, "range %d dport inc %d\n", i, range->dst_port_inc);
+		fprintf(fd, "range %d dst port start %d\n", i, range->dst_port);
+		fprintf(fd, "range %d dst port min %d\n", i, range->dst_port_min);
+		fprintf(fd, "range %d dst port max %d\n", i, range->dst_port_max);
+		fprintf(fd, "range %d dst port inc %d\n", i, range->dst_port_inc);
 
 		fprintf(fd, "\n");
 		fprintf(fd, "range %d vlan start %d\n", i, range->vlan_id);

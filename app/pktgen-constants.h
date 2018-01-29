@@ -17,8 +17,8 @@ extern "C" {
 enum {
 	DEFAULT_PKT_BURST       = 64,	/* Increasing this number consumes memory very fast */
 #ifdef RTE_LIBRTE_VMXNET3_PMD
-	DEFAULT_RX_DESC         = (DEFAULT_PKT_BURST * 8 * 2),
-	DEFAULT_TX_DESC         = DEFAULT_RX_DESC * 2,
+	DEFAULT_RX_DESC         = (DEFAULT_PKT_BURST * 8 * 2),  //1024
+	DEFAULT_TX_DESC         = DEFAULT_RX_DESC * 2,          //2048
 #else
 	DEFAULT_RX_DESC         = (DEFAULT_PKT_BURST * 8),
 	DEFAULT_TX_DESC         = DEFAULT_RX_DESC * 2,
