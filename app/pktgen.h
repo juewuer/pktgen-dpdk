@@ -416,7 +416,8 @@ estate(const char *state) {
 static inline const char *
 pktgen_version(void) {
 	static char pkt_version[128];
-
+    if(pkt_version[0] != '\0')
+        return pkt_version;
 	snprintf(pkt_version, sizeof(pkt_version),
 		 "Ver: %s (%s)", PKTGEN_VERSION, rte_version());
 	return pkt_version;

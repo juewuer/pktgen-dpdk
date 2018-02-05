@@ -63,18 +63,47 @@ pktgen_default_rnd_func(void)
 { 
     return xor_next(); 
 } 
-
+#define DNS_URL_MAX_LEN 31
 static char str[37] = "0123456789abcdefghijklmnopqrstuvwxyz";
-static char hostname[32] = {9,'x','x','x','x','x','x','x','x','x',2,'k','6',4,'g','s','l','b',8,'k','s','y','u','n','c','d','n',3,'c','o','m',0};
-
+static char dns_url[]="my.photo.ksyun.cn";
+static int dns_url_len;
+static char hostname[DNS_URL_MAX_LEN+1] = {9,'x','x','x','x','x','x','x','x','x',2,'k','6',4,'g','s','l','b',8,'k','s','y','u','n','c','d','n',3,'c','o','m',0};
+static int hostname_len = 0;
+static int pktgen_udp_inited = 0;
 #define UDP_PORT_DNS 53
+/*
+return:
+    0 - success
+*/
+int pktgen_udp_init(void)
+{
+    int d,h,hp;
+    if(pktgen_udp_inited)
+        return 0;
+    dns_url_len = strlen(dns_url);
+    hostname_len = dns_url_len+2;
+    if(dns_url_len > DNS_URL_MAX_LEN)
+        return 1;
+    for(d=0,h=1,hp=0;d<=dns_url_len;d++,h++)
+    {
+        hostname[h]=dns_url[d];
+        if(dns_url[d]=='.'||dns_url[d]=='\0')
+        {
+            hostname[hp]=h-hp-1;
+            hp=h;
+        }
+    }
+    
+    pktgen_udp_inited = 1;
+    return 0;
+}
 
 void *
 pktgen_udp_hdr_ctor(pkt_seq_t *pkt, void *hdr, int type)
 {
 	uint16_t tlen;
 	int i;
-
+    
 	if (type == ETHER_TYPE_IPv4) {
 		udpip_t *uip = (udpip_t *)hdr;
 
@@ -83,7 +112,8 @@ pktgen_udp_hdr_ctor(pkt_seq_t *pkt, void *hdr, int type)
 		
 		if(pkt->dport == UDP_PORT_DNS)
 		{
-			pkt->pktSize= pkt->ether_hdr_size +sizeof(ipHdr_t)+sizeof(udpip_t)+sizeof(struct dnshdr)+sizeof(struct dnsdata);
+		    pktgen_udp_init();
+			pkt->pktSize= pkt->ether_hdr_size+sizeof(udpip_t)+sizeof(struct dnshdr)+hostname_len+4;
 		}		
 
 		/* Create the UDP header */
@@ -106,7 +136,12 @@ pktgen_udp_hdr_ctor(pkt_seq_t *pkt, void *hdr, int type)
 			dnsh->id = htons(pktgen_default_rnd_func());
 			dnsh->rd = 1;
 			dnsh->que_num= htons(1);
-	
+		    unsigned char* dns_data=(unsigned char*)dnsh+sizeof(struct dnshdr);
+			memcpy(dns_data, hostname, hostname_len);
+			*((unsigned short int*)(dns_data+hostname_len)) = htons(1);  //type, 1 - type A
+			*((unsigned short int*)(dns_data+hostname_len+2)) = htons(1); //class, 1 - IN
+
+/*	
 			struct dnsdata *dnsd = (struct dnsdata*)((char*)dnsh+sizeof(struct dnshdr));
 	
 			dnsd->query[0]=9;
@@ -121,6 +156,7 @@ pktgen_udp_hdr_ctor(pkt_seq_t *pkt, void *hdr, int type)
 			
 			dnsd->type = htons(1);
 			dnsd->class= htons(1);
+			*/
 	
 		}	
 
