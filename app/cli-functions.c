@@ -22,6 +22,8 @@
 #include <rte_string_fns.h>
 #include <cli_string_fns.h>
 #include <rte_hexdump.h>
+#include <rte_cycles.h>
+#include <rte_malloc.h>
 
 #include "pktgen.h"
 
@@ -332,7 +334,7 @@ range_cmd(int argc, char **argv)
 				);
 			break;
 		default:
-			return -1;
+			return cli_cmd_error("Range command error", "Range", argc, argv);
 	}
 	pktgen_update_display();
 	return 0;
@@ -451,7 +453,7 @@ set_cmd(int argc, char **argv)
 					case 10: single_set_vlan_id(info, value); break;
 					case 11: pktgen_set_port_seqCnt(info, value); break;
 					default:
-						return -1;
+						return cli_cmd_error("Set command is invalid", "Set", argc, argv);
 				}) );
 			break;
 		case 11:
@@ -508,6 +510,27 @@ set_cmd(int argc, char **argv)
 			id2 = strtol(argv[4], NULL, 0);
 			foreach_port(portlist, single_set_qinqids(info, id1, id2));
 			break;
+		case 60: {
+			char mask[34] = { 0 }, *m;
+			char cb;
+
+			id1 = strtol(argv[3], NULL, 0);
+			id2 = strtol(argv[4], NULL, 0);
+			m = argv[5];
+			if (strcmp(m, "off")) {
+				int idx;
+				/* Filter invalid characters from provided mask. This way the user can
+				* more easily enter long bitmasks, using for example '_' as a separator
+				* every 8 bits. */
+				for (n = 0, idx = 0; (idx < 32) && ((cb = m[n]) != '\0'); n++)
+					if ((cb == '0') || (cb == '1') || (cb == '.') || (cb == 'X') || (cb == 'x'))
+						mask[idx++] = cb;
+			}
+			foreach_port(portlist,
+				enable_random(info, pktgen_set_random_bitfield(info->rnd_bitfields,
+					id1, id2, mask) ? ENABLE_STATE : DISABLE_STATE));
+			}
+			break;
 		case 70:
 			id1 = strtol(argv[3], NULL, 0);
 			foreach_port(portlist, single_set_cos(info, id1));
@@ -517,7 +540,7 @@ set_cmd(int argc, char **argv)
 			foreach_port(portlist, single_set_tos(info, id1));
 			break;
 		default:
-			return -1;
+			return cli_cmd_error("Command invalid", "Set", argc, argv);
 	}
 
 	pktgen_update_display();
@@ -581,7 +604,7 @@ pcap_cmd(int argc, char **argv)
 				pcap_filter(info, argv[3]) );
 			break;
 		default:
-			return -1;
+			return cli_cmd_error("PCAP command invalid", "PCAP", argc, argv);
 	}
 	pktgen_update_display();
 	return 0;
@@ -639,7 +662,7 @@ start_stop_cmd(int argc, char **argv)
 				     pktgen_send_arp_requests(info, 0) );
 			break;
 		default:
-			return -1;
+			return cli_cmd_error("Start/Stop command invalid", "Start", argc, argv);
 	}
 	pktgen_update_display();
 	return 0;
@@ -817,8 +840,7 @@ en_dis_cmd(int argc, char **argv)
 					foreach_port(portlist, enable_short_pkts(info, state));
 					break;
 				default:
-					cli_printf("Invalid option %s\n", ed_type);
-					return -1;
+					return cli_cmd_error("Enable/Disable invalid command", "Enable", argc, argv);
 			}
 			break;
 
@@ -832,12 +854,15 @@ en_dis_cmd(int argc, char **argv)
 				pktgen_screen(state);
 			break;
 		default:
-			cli_usage();
-			return -1;
+			return cli_cmd_error("Enable/Disable invalid command", "Enable", argc, argv);
 	}
 	pktgen_update_display();
 	return 0;
 }
+
+#ifdef RTE_LIBRTE_SMEM
+#include <rte_smem.h>
+#endif
 
 static struct cli_map dbg_map[] = {
 	{ 10, "dbg l2p" },
@@ -852,6 +877,8 @@ static struct cli_map dbg_map[] = {
 	{ 70, "dbg smem" },
 #endif
 	{ 80, "dbg break" },
+	{ 90, "dbg memcpy" },
+	{ 91, "dbg memcpy %d %d" },
     { -1, NULL }
 };
 
@@ -864,25 +891,67 @@ static const char *dbg_help[] = {
 	"dbg memseg                       - List all of the current memsegs",
 	"dbg hexdump <addr> <len>         - hex dump memory at given address",
 #ifdef RTE_LIBRTE_SMEM
-	"dbg smem                         - dump out the RBUF structure",
+	"dbg smem                         - dump out the SMEM structure",
 #endif
 	"dbg break                        - break into the debugger",
+	"dbg memcpy [loop-cnt KBytes]     - run a memcpy test",
 	"",
 	NULL
 };
+
+static void
+rte_memcpy_perf(unsigned int cnt, unsigned int kb, int flag)
+{
+	char *buf[2], *src, *dst;
+	uint64_t start_time, total_time;
+	uint64_t total_bits, bits_per_tick;
+	unsigned int i;
+	void *(*cpy)(void *, const void *, size_t);
+
+	kb *= 1024;
+
+	buf[0] = malloc(kb + RTE_CACHE_LINE_SIZE);
+	buf[1] = malloc(kb + RTE_CACHE_LINE_SIZE);
+
+	src = RTE_PTR_ALIGN(buf[0], RTE_CACHE_LINE_SIZE);
+	dst = RTE_PTR_ALIGN(buf[1], RTE_CACHE_LINE_SIZE);
+
+	cpy = (flag)? rte_memcpy : memcpy;
+
+	start_time = rte_get_tsc_cycles();
+	for(i = 0; i < cnt; i++)
+		cpy(dst, src, kb);
+	total_time = rte_get_tsc_cycles() - start_time;
+
+	total_bits = ((uint64_t)cnt * (uint64_t)kb) * 8L;
+
+	bits_per_tick = total_bits/total_time;
+
+	free(buf[0]);
+	free(buf[1]);
+
+#define MEGA (uint64_t)(1024 * 1024)
+	printf("%3d Kbytes for %8d loops, ", (kb/1024), cnt);
+	printf("%3ld bits/tick, ", bits_per_tick);
+	printf("%6ld Mbits/sec with %s\n",
+		(bits_per_tick * rte_get_timer_hz())/MEGA,
+		(flag)? "rte_memcpy" : "memcpy");
+}
 
 static int
 dbg_cmd(int argc, char **argv)
 {
 	struct cli_map *m;
 	portlist_t portlist;
-	unsigned int len;
+	unsigned int len, cnt;
 	const void *addr;
 
 	m = cli_mapping(dbg_map, argc, argv);
 	if (!m)
 		return cli_cmd_error("Debug invalid command", "Debug", argc, argv);
 
+	len = 32;
+	cnt = 100000;
 	switch(m->index) {
 		case 10:
 			pktgen_l2p_dump();
@@ -919,11 +988,24 @@ dbg_cmd(int argc, char **argv)
 				len = strtoul(argv[3], NULL, 0);
 			rte_hexdump(stdout, "", addr, len);
 			break;
+#ifdef RTE_LIBRTE_SMEM
+		case 70:
+			rte_smem_list_dump(stdout);
+			break;
+#endif
 		case 80:
 			kill(getpid(), SIGINT);
 			break;
+		case 91:
+			cnt = atoi(argv[2]);
+			len = atoi(argv[3]);
+			/*FALLTHRU*/
+		case 90:
+			rte_memcpy_perf(cnt, len, 0);
+			rte_memcpy_perf(cnt, len, 1);
+			break;
 		default:
-			return -1;
+			return cli_cmd_error("Debug invalid command", "Debug", argc, argv);
 	}
 	return 0;
 }
@@ -957,8 +1039,10 @@ seq_1_set_cmd(int argc __rte_unused, char **argv)
 		return -1;
 	}
 
-	if (seqnum >= NUM_SEQ_PKTS)
+	if (seqnum >= NUM_SEQ_PKTS) {
+		cli_printf("sequence number too large\n");
 		return -1;
+	}
 
 	teid = (argc == 14)? strtoul(argv[13], NULL, 10) : 0;
 	p = strchr(argv[5], '/'); /* remove subnet if found */
@@ -1018,8 +1102,10 @@ seq_2_set_cmd(int argc __rte_unused, char **argv)
 		return -1;
 	}
 
-	if (seqnum >= NUM_SEQ_PKTS)
+	if (seqnum >= NUM_SEQ_PKTS) {
+		cli_printf("Sequence number too large\n");
 		return -1;
+	}
 
 	teid = (argc == 23)? strtoul(argv[22], NULL, 10) : 0;
 	p = strchr(argv[8], '/'); /* remove subnet if found */
@@ -1070,8 +1156,10 @@ seq_3_set_cmd(int argc __rte_unused, char **argv)
 	portlist_t portlist;
 	uint32_t cos, tos;
 
-	if (seqnum >= NUM_SEQ_PKTS)
+	if (seqnum >= NUM_SEQ_PKTS) {
+		cli_printf("Sequence number too large\n");
 		return -1;
+	}
 
 	cos = strtoul(argv[4], NULL, 10);
 	tos = strtoul(argv[6], NULL, 10);
@@ -1120,7 +1208,7 @@ seq_cmd(int argc, char **argv)
 		case 13: seq_2_set_cmd(argc, argv); break;
 		case 15: seq_3_set_cmd(argc, argv); break;
 		default:
-			return -1;
+			return cli_cmd_error("Sequence invalid command", "Seq", argc, argv);
 	}
 	return 0;
 }
@@ -1272,7 +1360,7 @@ misc_cmd(int argc, char **argv)
 				pktgen_display_set_geometry(rows, cols);
 				pktgen_clear_display();
 			} else
-				return -1;
+				return cli_cmd_error("Misc invalid command", "Misc", argc, argv);
 			/* FALLTHRU */
 		case 21:
 			pktgen_display_get_geometry(&rows, &cols);
@@ -1312,7 +1400,7 @@ misc_cmd(int argc, char **argv)
 			break;
 #endif
 		default:
-			return -1;
+			return cli_cmd_error("Misc invalid command", "Misc", argc, argv);
 	}
 	return 0;
 }
@@ -1356,7 +1444,7 @@ page_cmd(int argc, char **argv)
 		case 10:
 		case 11: pktgen_set_page(argv[1]); break;
 		default:
-			return -1;
+			return cli_cmd_error("Page invalid command", "Page", argc, argv);
 	}
 	return 0;
 }
