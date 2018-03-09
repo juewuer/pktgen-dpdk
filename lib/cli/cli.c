@@ -388,7 +388,7 @@ cli_add_tree(struct cli_node *parent, struct cli_tree *tree)
 	for (t = tree; t->type != CLI_UNK_NODE; t++) {
 		switch (t->type) {
 		case CLI_DIR_NODE:
-			d = &t->dir;
+			d = &t->node.dir;
 
 			if (!(n = cli_add_dir(d->name, parent))) {
 				RTE_LOG(ERR, EAL,
@@ -402,7 +402,7 @@ cli_add_tree(struct cli_node *parent, struct cli_tree *tree)
 			break;
 
 		case CLI_CMD_NODE:
-			c = &t->cmd;
+			c = &t->node.cmd;
 			if (!cli_add_cmd(c->name, parent,
 			                 c->cfunc, c->short_desc)) {
 				RTE_LOG(ERR, EAL,
@@ -412,7 +412,7 @@ cli_add_tree(struct cli_node *parent, struct cli_tree *tree)
 			break;
 
 		case CLI_FILE_NODE:
-			f = &t->file;
+			f = &t->node.file;
 			if (!cli_add_file(f->name, parent,
 			                  f->ffunc, f->short_desc)) {
 				RTE_LOG(ERR, EAL,
@@ -422,7 +422,7 @@ cli_add_tree(struct cli_node *parent, struct cli_tree *tree)
 			break;
 
 		case CLI_ALIAS_NODE:
-			a = &t->alias;
+			a = &t->node.alias;
 			if (!cli_add_alias(a->name, parent,
 			                   a->alias_atr, a->short_desc)) {
 				RTE_LOG(ERR, EAL,
@@ -432,7 +432,7 @@ cli_add_tree(struct cli_node *parent, struct cli_tree *tree)
 			break;
 
 		case CLI_STR_NODE:
-			s = &t->str;
+			s = &t->node.str;
 			if (cli_add_str(s->name, s->sfunc, s->string)) {
 				RTE_LOG(ERR, EAL,
 				        "Add string %s failed\n", s->name);

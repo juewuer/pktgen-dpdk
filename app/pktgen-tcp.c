@@ -73,12 +73,15 @@ pktgen_tcp_hdr_ctor(pkt_seq_t *pkt, void * hdr, int type)
 		tip->tcp.flags      = ACK_FLAG;						/* ACK */
 		tip->tcp.window     = htons(DEFAULT_WND_SIZE);
 		tip->tcp.urgent     = 0;
-		/*
-		tip->tcp.opts[0]     = 0x2;
-		tip->tcp.opts[1]     = 0x4;
-		tip->tcp.opts[2]     = 0x05;
-		tip->tcp.opts[3]     = 0xb4;
-*/
+		if(tip->tcp.flags&SYN_FLAG)
+		{
+		    // set MSS
+    		tip->tcp.opts[0]     = 0x2;
+    		tip->tcp.opts[1]     = 0x4;
+    		tip->tcp.opts[2]     = 0x05;
+    		tip->tcp.opts[3]     = 0xb4;
+		}
+
 		tlen                = pkt->pktSize - pkt->ether_hdr_size;
 
 		tip->tcp.cksum      = cksum(tip, tlen, 0);
