@@ -17,7 +17,8 @@ get_tarball:
 	fi
 	@if [ ! -d lua-$(lua_version) ]; then \
 		tar xf $(tarball); \
-		(cd lua-5.3.4; patch -p1 < ../lua-5.3.4.patch); \
+		(cd lua-5.3.4; patch -p1 < ../lua-5.3.4.patch; cd -); \
+		(ln -s lua-5.3.4/src/ src); \
 	fi
 
 clean:

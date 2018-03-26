@@ -232,17 +232,17 @@ struct cli_tree {
 		struct cli_file file;   /**< file nodes */
 		struct cli_alias alias; /**< alias nodes */
 		struct cli_str str;     /**< string node */
-	};
+	}node;
 };
 
 /**< Used to help create a directory tree */
-#define c_dir(n)		{ CLI_DIR_NODE,   .dir = {(n), 0} }
-#define c_bin(n)		{ CLI_DIR_NODE,   .dir = {(n), 1} }
-#define c_cmd(n, f, h)		{ CLI_CMD_NODE,   .cmd = {(n), (f), (h)} }
-#define c_file(n, rw, h)	{ CLI_FILE_NODE,  .file = {(n), (rw), (h)} }
-#define c_alias(n, l, h)	{ CLI_ALIAS_NODE, .alias = {(n), (l), (h)} }
-#define c_str(n, f, s)		{ CLI_STR_NODE,   .str = {(n), (f), (s)} }
-#define c_end()			{ CLI_UNK_NODE,   .dir = { NULL } }
+#define c_dir(n)		{ CLI_DIR_NODE,   .node.dir = {(n), 0} }
+#define c_bin(n)		{ CLI_DIR_NODE,   .node.dir = {(n), 1} }
+#define c_cmd(n, f, h)		{ CLI_CMD_NODE,   .node.cmd = {(n), (f), (h)} }
+#define c_file(n, rw, h)	{ CLI_FILE_NODE,  .node.file = {(n), (rw), (h)} }
+#define c_alias(n, l, h)	{ CLI_ALIAS_NODE, .node.alias = {(n), (l), (h)} }
+#define c_str(n, f, s)		{ CLI_STR_NODE,   .node.str = {(n), (f), (s)} }
+#define c_end()			{ CLI_UNK_NODE,   .node.dir = { NULL } }
 
 static inline void
 cli_set_user_state(void *val)
