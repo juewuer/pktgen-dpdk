@@ -20,7 +20,7 @@ extern "C" {
 #endif
 
 __extension__
-typedef void    *MARKER[0];   /**< generic marker for a point in a structure */
+//typedef void    *MARKER[0];   /**< generic marker for a point in a structure */
 
 typedef struct pkt_seq_s {
 	/* Packet type and information */
