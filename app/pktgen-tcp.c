@@ -69,8 +69,8 @@ pktgen_tcp_hdr_ctor(pkt_seq_t *pkt, void * hdr, int type)
 		tip->tcp.seq        = htonl(DEFAULT_PKT_NUMBER);
 		tip->tcp.ack        = htonl(DEFAULT_ACK_NUMBER);
 		tip->tcp.offset     = ((sizeof(tcpHdr_t) / sizeof(uint32_t)) << 4);	/* Offset in words */
-		//tip->tcp.flags      = SYN_FLAG;						/* SYN */
-		tip->tcp.flags      = ACK_FLAG;						/* ACK */
+		tip->tcp.flags      = SYN_FLAG;						/* SYN */
+		//tip->tcp.flags      = ACK_FLAG;						/* ACK */
 		tip->tcp.window     = htons(DEFAULT_WND_SIZE);
 		tip->tcp.urgent     = 0;
 		if(tip->tcp.flags&SYN_FLAG)
